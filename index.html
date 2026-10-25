@@ -482,7 +482,9 @@ input[type=text]:focus, select:focus { outline: none; border-color: var(--teal);
     if (!evRef) return;
     const out = { ...ev, by: me.pid, ts: firebase.database.ServerValue.TIMESTAMP };
     Object.keys(out).forEach(k => out[k] === undefined && delete out[k]);
-    return evRef.push(out);
+    const res = evRef.push(out);
+    if (res && res.catch) res.catch(() => { setNet('bad', 'The table is not accepting players yet. Ask the host to finish setting it up, then reload.'); $('joinNote').textContent = 'Could not join: the table is not ready yet.'; });
+    return res;
   }
   function onEvents(snap) {
     gotData = true;
@@ -519,6 +521,7 @@ input[type=text]:focus, select:focus { outline: none; border-color: var(--teal);
     const name = $('nameIn').value.trim().slice(0, 16);
     if (!name) { $('joinNote').textContent = 'Please type a name.'; $('nameIn').focus(); return; }
     if (!pickedEmoji) pickedEmoji = EMOJIS.find(e => !state.players.some(p => p.emoji === e)) || EMOJIS[0];
+    if ($('net').classList.contains('bad')) { $('joinNote').textContent = 'The table is not ready yet, so nobody can join right now.'; return; }
     me.name = name; me.emoji = pickedEmoji; store.set('rhymeName', name); store.set('rhymeEmoji', pickedEmoji);
     post({ t: 'join', name, emoji: pickedEmoji });
   });
