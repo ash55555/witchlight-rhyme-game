@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rhyme or Pop! | Witchlight Carnival</title>
+<meta name="description" content="A live multiplayer rhyming game set at the Witchlight Carnival. Rhyme to rise on a bubble above the teapot. Miss a rhyme and you pop!">
+<meta name="theme-color" content="#1a0f3a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fondamento:ital@0;1&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #fff4e0;
+  --muted: #cdb8f0;
+  --gold: #ffd36b;
+  --pink: #ff8fc7;
+  --teal: #6fe3d2;
+  --night: #1a0f3a;
+  --panel: rgba(34, 18, 72, 0.82);
+  --line: rgba(255, 255, 255, 0.16);
+  --bs: 78px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  color: var(--ink);
+  font-family: 'Fredoka', 'Trebuchet MS', system-ui, sans-serif;
+  background: radial-gradient(ellipse 90% 50% at 50% 0%, #4a2a8a 0%, transparent 70%), linear-gradient(#150b30, #2a1560 60%, #3b1a55);
+  background-attachment: fixed;
+  display: flex; justify-content: center;
+}
+.app { width: 100%; max-width: 860px; padding: 1.2rem 1rem 3rem; }
+header { text-align: center; margin-bottom: 0.8rem; }
+.kicker { margin: 0; letter-spacing: 0.3em; text-transform: uppercase; font-size: 0.72rem; color: var(--pink); }
+h1 {
+  margin: 0.15rem 0; font-family: 'Fondamento', 'Fredoka', cursive; font-weight: 400; font-size: clamp(2.2rem, 8vw, 3.4rem);
+  background: linear-gradient(90deg, #ffd36b, #ff8fc7, #6fe3d2); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 2px 0 rgba(0,0,0,0.35));
+}
+.sub { margin: 0; color: var(--muted); }
+
+/* ---------- Scene ---------- */
+.scene {
+  position: relative; height: clamp(430px, 64vh, 640px); border-radius: 26px; overflow: hidden; isolation: isolate;
+  border: 3px solid rgba(255,255,255,0.18); box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  background: linear-gradient(#0f0828 0%, #2b1366 38%, #8a2f87 70%, #ff7e8b 92%, #ffb36b 100%);
+}
+.stars, .far, .teapot-wrap, .players, .fx, .banner { position: absolute; }
+.stars { inset: 0; z-index: 0; }
+.stars i { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #fff; animation: twinkle 3s ease-in-out infinite; }
+@keyframes twinkle { 50% { opacity: 0.2; transform: scale(0.6); } }
+.far { left: 0; right: 0; bottom: 0; height: 46%; width: 100%; z-index: 1; }
+.wheel { transform-origin: 700px 130px; animation: spin 90s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.bulb { animation: twinkle 2.4s ease-in-out infinite; }
+.lantern { position: absolute; width: 14px; height: 18px; border-radius: 6px 6px 8px 8px; background: radial-gradient(circle at 50% 40%, #fff3b0, #ffb347); box-shadow: 0 0 14px 4px rgba(255,190,90,0.6); z-index: 1; animation: drift 14s ease-in-out infinite alternate; }
+@keyframes drift { from { transform: translate(0, 0); } to { transform: translate(24px, -40px); } }
+
+.ruler { position: absolute; left: 0; right: 0; z-index: 1; border-top: 1px dashed rgba(255,255,255,0.12); font-size: 0.7rem; color: rgba(255,255,255,0.35); padding-left: 8px; pointer-events: none; transition: bottom 0.8s ease; }
+
+/* teapot */
+.teapot-wrap { left: 50%; bottom: -6px; width: min(300px, 58%); transform: translateX(-50%); z-index: 2; }
+.teapot-wrap svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 10px 14px rgba(0,0,0,0.4)); }
+.steam { animation: steam 4s ease-in-out infinite; transform-origin: 40px 70px; }
+.steam.s2 { animation-delay: 1.3s; } .steam.s3 { animation-delay: 2.6s; }
+@keyframes steam { 0% { opacity: 0; transform: translateY(8px) scaleY(0.6); } 40% { opacity: 0.7; } 100% { opacity: 0; transform: translateY(-34px) scaleY(1.2); } }
+.puff { position: absolute; left: 12%; top: 22%; width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.7); background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.8), rgba(255,255,255,0.1) 60%); opacity: 0; animation: puff 3.6s ease-out infinite; }
+@keyframes puff { 0% { transform: translate(0, 0) scale(0.4); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(-30px, -170px) scale(1.2); opacity: 0; } }
+
+/* players: bubble balloons */
+.players { inset: 0; z-index: 4; }
+.player { position: absolute; width: var(--pw, 118px); margin-left: calc(var(--pw, 118px) / -2); text-align: center; transition: bottom 1s cubic-bezier(.3,.9,.3,1.15), left 0.8s ease; will-change: bottom; }
+.bob { animation: bob 3.2s ease-in-out infinite; animation-delay: var(--d, 0s); }
+@keyframes bob { 50% { transform: translateY(-7px) rotate(1.5deg); } }
+.bubble {
+  position: relative; width: var(--bs); height: var(--bs); margin: 0 auto; border-radius: 50%; display: grid; place-items: center;
+  font-size: calc(var(--bs) * 0.5); line-height: 1;
+  background:
+    radial-gradient(circle at 30% 26%, rgba(255,255,255,0.95) 0 7%, rgba(255,255,255,0.3) 8% 17%, transparent 18%),
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.1) 52%, rgba(160,220,255,0.38) 78%, rgba(255,150,230,0.6) 100%);
+  border: 2px solid rgba(255,255,255,0.6); box-shadow: inset 0 0 18px rgba(255,255,255,0.4), 0 6px 22px rgba(130,90,255,0.45);
+  transition: box-shadow 0.3s, opacity 0.5s, transform 0.3s;
+}
+.bubble::after { content: ''; position: absolute; left: 50%; bottom: -12px; width: 12px; height: 12px; margin-left: -6px; background: rgba(255,255,255,0.55); clip-path: polygon(50% 0, 0 100%, 100% 100%); }
+.avatar { filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35)); transition: transform 1.3s cubic-bezier(.5,0,.9,.4); }
+.pname { margin: 14px auto 0; display: inline-block; max-width: 100%; padding: 1px 9px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; background: rgba(20,10,50,0.7); border: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.height { display: block; font-size: 0.68rem; color: var(--gold); margin-top: 1px; }
+.player.me .pname { border-color: var(--teal); color: var(--teal); }
+.player.active .bubble { box-shadow: inset 0 0 18px rgba(255,255,255,0.4), 0 0 0 4px var(--gold), 0 0 36px 8px rgba(255,211,107,0.7); animation: pulse 1.1s ease-in-out infinite; }
+.player.active .pname { background: var(--gold); color: #3a1c00; border-color: var(--gold); }
+@keyframes pulse { 50% { transform: scale(1.07); } }
+.say {
+  position: absolute; left: 50%; bottom: calc(100% + 12px); transform: translateX(-50%) scale(0.6); opacity: 0; min-width: 60px; max-width: 170px;
+  padding: 5px 11px; border-radius: 14px; background: #fff8e6; color: #3a1c5a; font-weight: 600; font-size: 0.95rem; line-height: 1.15; pointer-events: none;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35); z-index: 3;
+}
+.say::after { content: ''; position: absolute; left: 50%; bottom: -7px; margin-left: -7px; border: 7px solid transparent; border-top-color: #fff8e6; border-bottom: 0; }
+.say.show { animation: sayPop 3.4s ease forwards; }
+@keyframes sayPop { 0% { opacity: 0; transform: translateX(-50%) scale(0.5); } 10% { opacity: 1; transform: translateX(-50%) scale(1.08); } 15% { transform: translateX(-50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(1); } }
+.say.bad { background: #ffd4dd; color: #7a1030; } .say.bad::after { border-top-color: #ffd4dd; }
+.player.dead { z-index: 1; }
+.player.dead .bubble { background: none; border-color: transparent; box-shadow: none; }
+.player.dead .bubble::after { display: none; }
+.player.dead .avatar { filter: grayscale(1) opacity(0.7); transform: rotate(18deg); }
+.player.dead .pname { opacity: 0.55; text-decoration: line-through; }
+.player.dead .bob { animation: none; }
+.player.winner .bubble { box-shadow: inset 0 0 18px rgba(255,255,255,0.5), 0 0 0 5px var(--gold), 0 0 60px 18px rgba(255,211,107,0.85); }
+.player.winner .pname { background: var(--gold); color: #3a1c00; }
+.crown { position: absolute; left: 50%; top: -26px; transform: translateX(-50%); font-size: 1.6rem; display: none; }
+.player.winner .crown { display: block; animation: bob 1.8s ease-in-out infinite; }
+
+.fx { inset: 0; z-index: 6; pointer-events: none; overflow: hidden; }
+.shard { position: absolute; width: 10px; height: 10px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.85); background: rgba(190,230,255,0.5); animation: shard 0.9s ease-out forwards; }
+@keyframes shard { to { transform: translate(var(--dx), var(--dy)) scale(0.3); opacity: 0; } }
+.popword { position: absolute; font-family: 'Fondamento', cursive; font-size: 2.2rem; color: #fff; text-shadow: 0 0 10px #ff4fa0, 0 3px 0 #b0125e; animation: popword 1.2s ease-out forwards; transform: translateX(-50%); }
+@keyframes popword { 0% { transform: translateX(-50%) scale(0.3) rotate(-10deg); opacity: 0; } 25% { opacity: 1; transform: translateX(-50%) scale(1.3) rotate(6deg); } 100% { transform: translateX(-50%) translateY(-40px) scale(1); opacity: 0; } }
+.confetti { position: absolute; top: -20px; width: 9px; height: 14px; animation: fall linear forwards; }
+@keyframes fall { to { transform: translate(var(--dx), 110vh) rotate(720deg); } }
+.banner { left: 0; right: 0; top: 36%; text-align: center; z-index: 7; pointer-events: none; font-family: 'Fondamento', cursive; font-size: clamp(1.7rem, 6vw, 2.6rem); color: var(--gold); text-shadow: 0 3px 0 #6a2d00, 0 0 24px rgba(255,211,107,0.8); opacity: 0; transition: opacity 0.8s; }
+.banner.show { opacity: 1; }
+
+/* ---------- Panels ---------- */
+.panel { margin-top: 1rem; padding: 1.1rem 1.2rem; border-radius: 20px; background: var(--panel); border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+.panel[hidden], [hidden] { display: none !important; }
+h2 { margin: 0 0 0.6rem; font-size: 1.15rem; color: var(--gold); }
+label { display: block; font-size: 0.85rem; color: var(--muted); margin: 0.6rem 0 0.25rem; }
+input[type=text], select {
+  width: 100%; padding: 0.7em 0.9em; border-radius: 12px; border: 2px solid rgba(255,255,255,0.22); background: rgba(10,5,30,0.6); color: var(--ink);
+  font-family: inherit; font-size: 1.05rem;
+}
+input[type=text]:focus, select:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(111,227,210,0.3); }
+.emojis { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 6px; }
+.emojis button { font-size: 1.5rem; padding: 6px 0; border-radius: 12px; background: rgba(255,255,255,0.07); border: 2px solid transparent; cursor: pointer; }
+.emojis button[aria-pressed="true"] { border-color: var(--gold); background: rgba(255,211,107,0.2); }
+.emojis button:disabled { opacity: 0.25; cursor: not-allowed; }
+.btn { font-family: inherit; font-weight: 600; font-size: 1rem; padding: 0.7em 1.4em; border-radius: 99px; border: 0; cursor: pointer; color: #2b1200; background: linear-gradient(135deg, #ffd36b, #ff9f5a); box-shadow: 0 6px 18px rgba(255,159,90,0.35); }
+.btn:hover { filter: brightness(1.08); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.ghost { background: rgba(255,255,255,0.09); color: var(--ink); box-shadow: none; border: 1px solid var(--line); }
+.row { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; margin-top: 0.8rem; }
+.row > * { flex: 0 0 auto; }
+.grow { flex: 1 1 200px !important; }
+.roster { display: flex; flex-wrap: wrap; gap: 8px; margin: 0.4rem 0; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 99px; background: rgba(255,255,255,0.09); border: 1px solid var(--line); }
+.chip.host::after { content: 'host'; font-size: 0.65rem; color: var(--gold); margin-left: 3px; }
+.seedline { text-align: center; }
+.seedline small { display: block; color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase; font-size: 0.7rem; }
+.seedword { font-family: 'Fondamento', cursive; font-size: clamp(2.2rem, 9vw, 3.4rem); line-height: 1.1; color: var(--teal); text-shadow: 0 0 22px rgba(111,227,210,0.6); }
+.turnline { text-align: center; font-size: 1.1rem; margin: 0.3rem 0 0.5rem; }
+.turnline b { color: var(--gold); }
+.timer { height: 12px; border-radius: 99px; background: rgba(255,255,255,0.12); overflow: hidden; }
+.timer i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #6fe3d2, #ffd36b, #ff6b8e); transform-origin: left; }
+.timer.low i { animation: flash 0.5s steps(2) infinite; }
+@keyframes flash { 50% { filter: brightness(1.6); } }
+.timeleft { text-align: right; font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+.feedback { min-height: 1.5em; margin: 0.5rem 0 0; color: #ffc2d6; }
+.feedback.good { color: var(--teal); }
+.chain { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 0.4rem; }
+.chain .chip { background: rgba(255,248,230,0.12); }
+.net { margin: 1rem 0 0; text-align: center; font-size: 0.8rem; color: var(--muted); }
+.net::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #888; margin-right: 6px; }
+.net.live::before { background: #6fe36f; box-shadow: 0 0 8px #6fe36f; } .net.bad::before { background: #ff8f6b; }
+.how { margin-top: 1rem; color: var(--muted); font-size: 0.92rem; line-height: 1.5; }
+.how summary { cursor: pointer; color: var(--pink); }
+#loading { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: #1a0f3a; font-family: 'Fondamento', cursive; font-size: 1.6rem; color: var(--gold); text-align: center; padding: 1rem; transition: opacity 0.5s; }
+#loading.done { opacity: 0; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .bob, .steam, .puff, .wheel, .lantern, .stars i, .player.active .bubble { animation: none !important; } .player { transition: none; } }
+@media (max-width: 560px) { :root { --bs: 62px; } .say { font-size: 0.85rem; max-width: 130px; } }
+</style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+<div id="loading"><div>Brewing the dictionary&hellip;<br><small style="font-size:1rem;color:#cdb8f0">stirring the teapot</small></div></div>
+
+<main class="app">
+  <header>
+    <p class="kicker">The Witchlight Carnival</p>
+    <h1>Rhyme or Pop!</h1>
+    <p class="sub">Rhyme to rise on your bubble. Miss one and <b>POP!</b> The last bubble floating wins.</p>
+  </header>
+
+  <section class="scene" id="scene" aria-label="The carnival sky above the teapot">
+    <div class="stars" id="stars"></div>
+    <svg class="far" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <defs><linearGradient id="hill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b1a6b"/><stop offset="1" stop-color="#1a0b3a"/></linearGradient></defs>
+      <path d="M0 300V190C120 150 220 210 340 175 460 140 560 205 700 170 820 140 920 190 1000 160V300Z" fill="url(#hill)" opacity="0.95"/>
+      <g class="wheel" stroke="#ffd36b" stroke-width="3" fill="none" opacity="0.9">
+        <circle cx="700" cy="130" r="86"/><circle cx="700" cy="130" r="8" fill="#ffd36b"/>
+        <path d="M700 44V216M614 130H786M639 69L761 191M761 69L639 191"/>
+        <g fill="#ff8fc7" stroke="none"><circle cx="700" cy="44" r="7"/><circle cx="700" cy="216" r="7" fill="#6fe3d2"/><circle cx="614" cy="130" r="7" fill="#ffd36b"/><circle cx="786" cy="130" r="7"/><circle cx="639" cy="69" r="7" fill="#6fe3d2"/><circle cx="761" cy="191" r="7" fill="#ffd36b"/><circle cx="761" cy="69" r="7" fill="#ffd36b"/><circle cx="639" cy="191" r="7"/></g>
+      </g>
+      <path d="M690 216 700 130 710 216" stroke="#ffd36b" stroke-width="4" fill="none"/>
+      <g stroke="#1a0b3a" stroke-width="2">
+        <path d="M130 200 200 110 270 200Z" fill="#ff8fc7"/><path d="M165 200 200 110 235 200Z" fill="#fff0c9"/><path d="M200 110V86" stroke="#ffd36b" stroke-width="3"/><path d="M200 86 222 94 200 102Z" fill="#6fe3d2" stroke="none"/>
+        <path d="M300 205 350 140 400 205Z" fill="#6fe3d2"/><path d="M325 205 350 140 375 205Z" fill="#c9b6ff"/>
+        <path d="M900 190 950 130 1000 190Z" fill="#ffd36b"/><path d="M925 190 950 130 975 190Z" fill="#ff8fc7"/>
+      </g>
+      <path d="M0 150 C200 190 400 120 640 170 S900 120 1000 140" stroke="#ffe9a8" stroke-width="1.5" fill="none" opacity="0.6"/>
+      <g id="bulbs"></g>
+    </svg>
+    <div class="lantern" style="left:12%;bottom:46%;animation-delay:-3s"></div>
+    <div class="lantern" style="left:84%;bottom:58%;animation-delay:-8s"></div>
+    <div class="lantern" style="left:30%;bottom:66%;animation-delay:-5s"></div>
+    <div id="rulers"></div>
+
+    <div class="teapot-wrap" aria-hidden="true">
+      <div class="puff"></div><div class="puff" style="animation-delay:1.2s;left:9%"></div><div class="puff" style="animation-delay:2.4s;left:15%"></div>
+      <svg viewBox="0 0 260 200">
+        <defs>
+          <linearGradient id="tb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8af0dc"/><stop offset="0.6" stop-color="#4aa3d6"/><stop offset="1" stop-color="#7a5cd6"/></linearGradient>
+          <linearGradient id="tl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset="1" stop-color="#ff9f5a"/></linearGradient>
+        </defs>
+        <g stroke="#2b1566" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round">
+          <path d="M205 96C255 84 258 156 203 150" fill="none" stroke-width="14" stroke="#2b1566"/><path d="M205 96C255 84 258 156 203 150" fill="none" stroke-width="8" stroke="#ff8fc7"/>
+          <path d="M56 118C16 118 6 78 28 62L44 76C34 88 40 104 64 108Z" fill="url(#tb)"/>
+          <ellipse cx="130" cy="124" rx="84" ry="62" fill="url(#tb)"/>
+          <path d="M74 120C92 100 168 100 186 120" fill="none" stroke="#ffd36b" stroke-width="5"/>
+          <path d="M70 140C90 162 170 162 190 140" fill="none" stroke="#ff8fc7" stroke-width="5" stroke-dasharray="2 9"/>
+          <path d="M96 78C106 62 154 62 164 78Z" fill="url(#tl)"/>
+          <ellipse cx="130" cy="78" rx="38" ry="9" fill="url(#tl)"/>
+          <circle cx="130" cy="58" r="10" fill="#ff8fc7"/>
+        </g>
+        <g fill="#fff3b0"><path d="M130 100l5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1z"/><circle cx="96" cy="130" r="3.5"/><circle cx="164" cy="132" r="3.5"/><circle cx="110" cy="148" r="2.5"/><circle cx="152" cy="148" r="2.5"/></g>
+        <g fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" opacity="0.75">
+          <path class="steam" d="M30 52c-10-10 8-16-2-28"/><path class="steam s2" d="M38 50c-8-12 10-14 0-30"/><path class="steam s3" d="M22 54c-10-8 6-14-4-24"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="players" id="players"></div>
+    <div class="fx" id="fx"></div>
+    <div class="banner" id="banner"></div>
+  </section>
+
+  <!-- Join -->
+  <section class="panel" id="joinBox" hidden>
+    <h2>Join the carnival</h2>
+    <label for="nameIn">Your name</label>
+    <input type="text" id="nameIn" maxlength="16" placeholder="e.g. Fennel" autocomplete="off">
+    <label>Pick your bubble buddy</label>
+    <div class="emojis" id="emojis"></div>
+    <div class="row"><button class="btn" id="joinBtn" type="button">Float in!</button><span id="joinNote" style="color:var(--muted)"></span></div>
+  </section>
+
+  <!-- Lobby -->
+  <section class="panel" id="lobbyBox" hidden>
+    <h2>Waiting at the teapot</h2>
+    <div class="roster" id="roster"></div>
+    <div id="hostControls" hidden>
+      <label for="seedIn">Starting word <span style="opacity:.7">(optional, leave empty for a surprise)</span></label>
+      <input type="text" id="seedIn" maxlength="24" placeholder="e.g. toilet" autocomplete="off">
+      <label for="secsSel">Time to rhyme</label>
+      <select id="secsSel"><option value="15">15 seconds (quick)</option><option value="25" selected>25 seconds</option><option value="40">40 seconds</option><option value="60">60 seconds (relaxed)</option></select>
+      <div class="row"><button class="btn" id="startBtn" type="button">Start the game</button><span id="startNote" style="color:var(--muted)"></span></div>
+    </div>
+    <p id="waitHost" style="color:var(--muted)" hidden></p>
+    <div class="row"><button class="btn ghost" id="leaveBtn" type="button">Leave</button></div>
+  </section>
+
+  <!-- Play -->
+  <section class="panel" id="playBox" hidden>
+    <div class="seedline"><small>Rhyme with</small><div class="seedword" id="seedWord"></div></div>
+    <p class="turnline" id="turnLine"></p>
+    <div class="timer" id="timer"><i id="timerBar"></i></div>
+    <div class="timeleft" id="timeLeft"></div>
+    <form id="answerForm" autocomplete="off" hidden>
+      <label for="answerIn" style="margin-top:.8rem">Your rhyme (real words only, up to 4 words)</label>
+      <div class="row" style="margin-top:.2rem"><input type="text" id="answerIn" class="grow" maxlength="40" placeholder="type a rhyme..." autocomplete="off" autocapitalize="none" spellcheck="false"><button class="btn" id="answerBtn" type="submit">Rhyme!</button></div>
+    </form>
+    <p class="feedback" id="feedback" aria-live="polite"></p>
+    <div class="row" id="inGameRow" style="margin-top:.2rem"><button class="btn ghost" id="quitBtn" type="button">Leave the game</button></div>
+  </section>
+
+  <!-- End -->
+  <section class="panel" id="endBox" hidden>
+    <h2 id="endTitle">The sky is quiet</h2>
+    <p id="endText" style="margin:.2rem 0 0;color:var(--muted)"></p>
+    <div class="row"><button class="btn" id="againBtn" type="button">Play again</button></div>
+  </section>
+
+  <section class="panel" id="chainBox" hidden>
+    <h2>Rhymes so far</h2>
+    <div class="chain" id="chain"></div>
+  </section>
+
+  <p class="net" id="net">Connecting&hellip;</p>
+  <details class="how">
+    <summary>How to play</summary>
+    <p>Everyone floats up from the teapot in a bubble. A word appears and you take turns rhyming with it. Every real rhyme lifts your bubble higher. If your word is real but does not rhyme, or time runs out, your bubble <b>pops</b> and you fall. The last bubble in the sky wins.</p>
+    <p>Rhymes can be more than one word (for example, <i>toilet</i> and <i>boil it</i>). Every word must be a real English word. You cannot repeat a word, and you cannot use a word that sounds exactly like one already said.</p>
+    <p id="roomInfo"></p>
+  </details>
+</main>
+
+<script src="core.js?v=1"></script>
+<script>
+(() => {
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyAnMtB4mvPqzhPq5rtgQ-6XgjY1uaz1mp0",
+    authDomain: "ash-ttrpg.firebaseapp.com",
+    databaseURL: "https://ash-ttrpg-default-rtdb.firebaseio.com",
+    projectId: "ash-ttrpg",
+    appId: "1:472699226703:web:9d03a58e26a258b1e1383a"
+  };
+  const SEEDS = ['moon','night','star','flame','tea','tree','sky','cake','bell','spell','wing','bear','hat','cat','frog','pie','dream','glow','snow','rain','play','bright','dance','fun','sun','king','ring','sing','green','queen','fairy','merry','berry','jolly','silly','sweet','treat','shine','wish','bloom','chime','time','rhyme','cheer','joy','toy','rock','clock','fox','box','gold','float','boat','spark','gleam','song','mist','twist','hello','below','bubble','trouble','pickle','tickle','teapot','breeze','cheese'];
+  const EMOJIS = ['\u{1F98A}','\u{1F438}','\u{1F984}','\u{1F419}','\u{1F989}','\u{1F344}','\u{1F319}','⭐','\u{1F52E}','\u{1F3AA}','\u{1F3A0}','\u{1F98B}','\u{1F409}','\u{1F9D9}','\u{1F9DA}','\u{1F9DD}','\u{1F370}','\u{1F36D}','\u{1FAD6}','\u{1F407}','\u{1F994}','\u{1F56F}️','\u{1FA84}','\u{1F41D}'];
+  const Core = window.RhymeCore;
+  const $ = id => document.getElementById(id);
+  const ROOM = (new URLSearchParams(location.search).get('room') || 'main').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 24) || 'main';
+
+  // ---------- Who am I (remembered on this device) ----------
+  const store = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
+  const me = {
+    pid: store.get('rhymePid') || Math.random().toString(36).slice(2, 10),
+    name: store.get('rhymeName') || '', emoji: store.get('rhymeEmoji') || '',
+  };
+  store.set('rhymePid', me.pid);
+  let pickedEmoji = me.emoji;
+
+  // ---------- Game state (rebuilt from the shared event log) ----------
+  let state = Core.initialState(), processedKeys = [], firstLoad = true, evRef = null, offset = 0, gotData = false;
+  const serverNow = () => Date.now() + offset;
+  const mine = () => state.players.find(p => p.pid === me.pid);
+  const byPid = pid => state.players.find(p => p.pid === pid);
+
+  // ---------- Decorations ----------
+  (function decorate() {
+    const stars = $('stars'); let h = '';
+    for (let i = 0; i < 70; i++) h += `<i style="left:${Math.random() * 100}%;top:${Math.random() * 62}%;animation-delay:${(Math.random() * 3).toFixed(2)}s;transform:scale(${(0.5 + Math.random() * 1).toFixed(2)})"></i>`;
+    stars.innerHTML = h;
+    const cols = ['#ff8fc7', '#ffd36b', '#6fe3d2', '#c9b6ff']; let b = '';
+    for (let i = 0; i < 26; i++) { const x = 20 + i * 38, y = 150 + Math.sin(i * 0.7) * 14 + i * 0.5; b += `<circle class="bulb" cx="${x}" cy="${y.toFixed(1)}" r="4" fill="${cols[i % 4]}" style="animation-delay:${(i * 0.17).toFixed(2)}s"/>`; }
+    $('bulbs').innerHTML = b;
+    $('roomInfo').textContent = 'Table: ' + ROOM + '. Add ?room=name to the link to run a separate table for another group.';
+  })();
+
+  // ---------- Scene: bubbles ----------
+  const els = new Map();   // pid -> element
+  const LANE = (i, n) => n === 1 ? 50 : 13 + 74 * i / (n - 1);
+  function levelMax() { return Math.max(6, ...state.players.map(p => p.height + 1)); }
+  function bottomPct(p) {
+    if (!p.alive && state.winner !== p.pid) return 6;
+    if (state.winner === p.pid) return 66;
+    return 24 + 52 * Math.min(1, p.height / levelMax());
+  }
+  function ensurePlayer(p) {
+    let el = els.get(p.pid);
+    if (el) return el;
+    el = document.createElement('div'); el.className = 'player';
+    el.innerHTML = '<div class="bob"><div class="crown">\u{1F451}</div><div class="bubble"><span class="avatar"></span><div class="say"></div></div><span class="pname"></span><span class="height"></span></div>';
+    el.style.bottom = '8%'; el.style.left = '50%';
+    $('players').appendChild(el); els.set(p.pid, el);
+    return el;
+  }
+  function syncScene() {
+    const n = state.players.length, ps = $('players');
+    const W = ps.clientWidth || 340, spacing = n > 1 ? 0.74 * W / (n - 1) : W;
+    const bs = Math.max(40, Math.min(78, Math.floor(spacing * 0.9)));
+    ps.parentElement.style.setProperty('--bs', bs + 'px');
+    ps.parentElement.style.setProperty('--pw', Math.max(bs + 6, Math.floor(spacing) - 2) + 'px');
+    for (const [pid, el] of els) if (!byPid(pid)) { el.remove(); els.delete(pid); }
+    state.players.forEach((p, i) => {
+      const el = ensurePlayer(p);
+      el.style.left = LANE(i, n) + '%';
+      el.style.bottom = bottomPct(p) + '%';
+      el.querySelector('.avatar').textContent = p.emoji;
+      el.querySelector('.pname').textContent = p.name;
+      el.querySelector('.height').textContent = p.alive ? (p.height ? '▲ ' + p.height : '') : '';
+      el.querySelector('.bob').style.setProperty('--d', (-(i * 0.7)) + 's');
+      el.classList.toggle('me', p.pid === me.pid);
+      el.classList.toggle('dead', !p.alive && state.winner !== p.pid);
+      el.classList.toggle('winner', state.winner === p.pid);
+      el.classList.toggle('active', state.status === 'playing' && state.turnPid === p.pid);
+    });
+    // faint height lines
+    const max = levelMax(); let r = '';
+    for (let l = 1; l <= max; l += max > 10 ? 2 : 1) r += `<div class="ruler" style="bottom:${24 + 52 * l / max}%">${l}</div>`;
+    $('rulers').innerHTML = r;
+  }
+
+  function burstAt(el, reason, text) {
+    const fx = $('fx'), sr = fx.getBoundingClientRect(), br = el.querySelector('.bubble').getBoundingClientRect();
+    const cx = br.left - sr.left + br.width / 2, cy = br.top - sr.top + br.height / 2;
+    for (let i = 0; i < 16; i++) {
+      const s = document.createElement('i'); s.className = 'shard';
+      const a = Math.PI * 2 * i / 16 + Math.random() * 0.4, d = 50 + Math.random() * 70;
+      s.style.left = cx + 'px'; s.style.top = cy + 'px';
+      s.style.setProperty('--dx', Math.cos(a) * d + 'px'); s.style.setProperty('--dy', Math.sin(a) * d + 'px');
+      fx.appendChild(s); setTimeout(() => s.remove(), 1000);
+    }
+    const w = document.createElement('div'); w.className = 'popword'; w.textContent = 'POP!'; w.style.left = cx + 'px'; w.style.top = cy - 30 + 'px';
+    fx.appendChild(w); setTimeout(() => w.remove(), 1300);
+  }
+  function say(el, text, bad) {
+    const s = el.querySelector('.say'); s.textContent = text; s.classList.toggle('bad', !!bad);
+    s.classList.remove('show'); void s.offsetWidth; s.classList.add('show');
+  }
+  function confetti() {
+    const fx = $('fx'), cols = ['#ff8fc7', '#ffd36b', '#6fe3d2', '#c9b6ff', '#fff'];
+    for (let i = 0; i < 90; i++) {
+      const c = document.createElement('i'); c.className = 'confetti';
+      c.style.left = Math.random() * 100 + '%'; c.style.background = cols[i % cols.length];
+      c.style.setProperty('--dx', (Math.random() - 0.5) * 160 + 'px');
+      c.style.animationDuration = 2.4 + Math.random() * 2.6 + 's'; c.style.animationDelay = Math.random() * 0.9 + 's';
+      fx.appendChild(c); setTimeout(() => c.remove(), 6500);
+    }
+  }
+  function banner(text) { const b = $('banner'); b.textContent = text; b.classList.add('show'); }
+
+  // ---------- Effects from new events ----------
+  function playEffects(effects) {
+    for (const e of effects) {
+      const p = byPid(e.pid), el = p && els.get(p.pid);
+      if (e.type === 'rise' && el) say(el, e.text);
+      else if (e.type === 'burst' && el) {
+        const label = e.reason === 'timeout' ? 'time!' : e.reason === 'left' ? 'bye!' : e.text || 'pop';
+        setTimeout(() => { burstAt(el, e.reason, e.text); say(el, label, true); }, 120);
+      } else if (e.type === 'win') { setTimeout(() => { confetti(); banner('\u{1F451} ' + (p ? p.name : 'Someone') + ' wins!'); }, 900); }
+      else if (e.type === 'start' || e.type === 'reset') $('banner').classList.remove('show');
+    }
+  }
+
+  // ---------- Panels ----------
+  let lastTurnShown = -1;
+  function renderPanels() {
+    const inGame = state.status !== 'lobby' && !!mine();
+    $('joinBox').hidden = !(!mine() && state.status === 'lobby');
+    $('lobbyBox').hidden = !(mine() && state.status === 'lobby');
+    $('playBox').hidden = state.status !== 'playing';
+    $('endBox').hidden = state.status !== 'ended';
+    $('chainBox').hidden = state.words.length === 0 && state.status !== 'playing';
+    if (!mine() && state.status !== 'lobby') $('feedback').textContent = '';
+
+    // join emoji grid
+    document.querySelectorAll('#emojis button').forEach(b => {
+      const taken = state.players.some(p => p.emoji === b.dataset.e && p.pid !== me.pid);
+      b.disabled = taken; b.setAttribute('aria-pressed', String(b.dataset.e === pickedEmoji));
+    });
+
+    // lobby
+    if (mine() && state.status === 'lobby') {
+      $('roster').innerHTML = state.players.map((p, i) => `<span class="chip ${i === 0 ? 'host' : ''}"><span>${p.emoji}</span>${esc(p.name)}</span>`).join('');
+      const host = state.players[0] && state.players[0].pid === me.pid;
+      $('hostControls').hidden = !host; $('waitHost').hidden = host;
+      $('waitHost').textContent = 'Waiting for ' + (state.players[0] ? state.players[0].name : 'the host') + ' to start the game...';
+      $('startBtn').disabled = state.players.length < 2;
+      $('startNote').textContent = state.players.length < 2 ? 'Need at least 2 players.' : '';
+    }
+    if (!mine() && state.status === 'lobby') {
+      $('joinNote').textContent = state.players.length ? state.players.length + ' waiting at the teapot.' : '';
+    }
+
+    // play
+    if (state.status === 'playing') {
+      $('seedWord').textContent = state.seed.word;
+      const tp = byPid(state.turnPid), myTurn = state.turnPid === me.pid && mine() && mine().alive;
+      $('turnLine').innerHTML = myTurn ? '<b>Your turn!</b> Rhyme it!' : `${tp.emoji} <b>${esc(tp.name)}</b> is thinking...`;
+      $('answerForm').hidden = !myTurn;
+      $('inGameRow').hidden = !(mine() && mine().alive);
+      if (myTurn && lastTurnShown !== state.turnIdx) { lastTurnShown = state.turnIdx; $('answerIn').value = ''; setFeedback(''); setTimeout(() => $('answerIn').focus(), 50); }
+      if (!myTurn) lastTurnShown = -1;
+    }
+    // end
+    if (state.status === 'ended') {
+      const w = byPid(state.winner);
+      $('endTitle').textContent = w ? `${w.emoji} ${w.name} wins!` : 'Everybody popped!';
+      $('endText').textContent = w ? 'The last bubble floating in the sky.' : 'No bubbles left in the sky.';
+      $('againBtn').hidden = !mine();
+      if (w) banner('\u{1F451} ' + w.name + ' wins!');
+    }
+    // chain
+    $('chain').innerHTML = state.words.map(w => { const p = byPid(w.pid); return `<span class="chip"><span>${p ? p.emoji : ''}</span>${esc(w.text)}</span>`; }).join('');
+    syncScene();
+  }
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  function setFeedback(t, good) { const f = $('feedback'); f.textContent = t; f.classList.toggle('good', !!good); }
+
+  // ---------- Talking to the shared table ----------
+  function post(ev) {
+    if (!evRef) return;
+    const out = { ...ev, by: me.pid, ts: firebase.database.ServerValue.TIMESTAMP };
+    Object.keys(out).forEach(k => out[k] === undefined && delete out[k]);
+    return evRef.push(out);
+  }
+  function onEvents(snap) {
+    gotData = true;
+    const obj = snap.val() || {}, keys = Object.keys(obj).sort();
+    const prefix = processedKeys.length <= keys.length && processedKeys.every((k, i) => k === keys[i]);
+    let effects = [];
+    if (!prefix) { state = Core.initialState(); processedKeys = []; }
+    const fresh = keys.slice(processedKeys.length);
+    for (const k of fresh) { const r = Core.reduce(state, obj[k]); if (prefix && !firstLoad) effects = effects.concat(r.effects); processedKeys.push(k); }
+    firstLoad = false;
+    renderPanels();
+    if (effects.length) playEffects(effects);
+    setNet('live', 'Live: everyone with this link is at the same table.');
+  }
+  function setNet(kind, text) { const n = $('net'); n.className = 'net ' + kind; n.textContent = text; }
+  function connect() {
+    try {
+      if (typeof firebase === 'undefined') throw new Error('no firebase');
+      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+      const db = firebase.database();
+      db.ref('.info/serverTimeOffset').on('value', s => { offset = s.val() || 0; });
+      evRef = db.ref('rhymeRooms/' + ROOM + '/events');
+      evRef.on('value', onEvents, () => offline());
+      setTimeout(() => { if (!gotData) offline(); }, 8000);
+    } catch (e) { offline(); }
+  }
+  function offline() { setNet('bad', 'Cannot reach the table right now. Check your connection and reload.'); }
+
+  // ---------- Controls ----------
+  $('emojis').innerHTML = EMOJIS.map(e => `<button type="button" data-e="${e}" aria-label="${e}">${e}</button>`).join('');
+  $('emojis').addEventListener('click', ev => { const b = ev.target.closest('button'); if (!b || b.disabled) return; pickedEmoji = b.dataset.e; renderPanels(); });
+  $('nameIn').value = me.name;
+  $('joinBtn').addEventListener('click', () => {
+    const name = $('nameIn').value.trim().slice(0, 16);
+    if (!name) { $('joinNote').textContent = 'Please type a name.'; $('nameIn').focus(); return; }
+    if (!pickedEmoji) pickedEmoji = EMOJIS.find(e => !state.players.some(p => p.emoji === e)) || EMOJIS[0];
+    me.name = name; me.emoji = pickedEmoji; store.set('rhymeName', name); store.set('rhymeEmoji', pickedEmoji);
+    post({ t: 'join', name, emoji: pickedEmoji });
+  });
+  $('leaveBtn').addEventListener('click', () => post({ t: 'leave' }));
+  $('quitBtn').addEventListener('click', () => { if (confirm('Leave the game? Your bubble will pop.')) post({ t: 'leave' }); });
+  $('againBtn').addEventListener('click', () => post({ t: 'reset' }));
+  $('startBtn').addEventListener('click', () => {
+    let seed = $('seedIn').value.trim().toLowerCase().replace(/[^a-z\s-]/g, '');
+    if (seed) {
+      const toks = Core.tokenize(seed);
+      if (toks.length !== 1 || !Core.hasWord(toks[0])) { $('startNote').textContent = `"${seed}" is not a real single word. Try another, or leave it empty.`; return; }
+      seed = toks[0];
+    } else seed = SEEDS[Math.floor(Math.random() * SEEDS.length)];
+    $('startNote').textContent = '';
+    post({ t: 'start', seed, secs: +$('secsSel').value });
+  });
+  $('answerForm').addEventListener('submit', ev => {
+    ev.preventDefault();
+    const text = $('answerIn').value;
+    if (!(state.status === 'playing' && state.turnPid === me.pid)) return;
+    const r = Core.checkAnswer(state.seed, text, state.used);
+    if (r.ok) { setFeedback('Lovely rhyme!', true); $('answerIn').value = ''; post({ t: 'say', pid: me.pid, idx: state.turnIdx, text }); return; }
+    switch (r.kind) {
+      case 'empty': return;
+      case 'long': return setFeedback('Keep it to 4 words or fewer.');
+      case 'notword': return setFeedback(`"${r.word}" is not a real word. Try another!`);
+      case 'used': return setFeedback(`"${r.word}" was already used. Find a fresh rhyme!`);
+      case 'same': return setFeedback('That sounds exactly the same. Find a different rhyme!');
+      default: post({ t: 'fail', pid: me.pid, idx: state.turnIdx, reason: 'wrong', text: r.text }); setFeedback('');
+    }
+  });
+
+  // ---------- Timer + timeouts ----------
+  const posted = new Set();
+  function tick() {
+    if (state.status === 'playing') {
+      const total = state.secs * 1000, left = state.turnStart + total - serverNow(), frac = Math.max(0, Math.min(1, left / total));
+      $('timerBar').style.transform = `scaleX(${frac})`;
+      $('timer').classList.toggle('low', left < 6000 && left > 0);
+      $('timeLeft').textContent = left > 0 ? Math.ceil(left / 1000) + 's' : 'time!';
+      if (left < -300 && !posted.has(state.turnIdx) && mine()) {
+        const idx = state.turnIdx, pid = state.turnPid; posted.add(idx);
+        setTimeout(() => { if (state.status === 'playing' && state.turnIdx === idx) post({ t: 'fail', pid, idx, reason: 'timeout' }); }, Math.random() * 1200);
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  // ---------- Start ----------
+  async function boot() {
+    try {
+      const res = await fetch('dict.txt?v=1');
+      if (!res.ok) throw new Error(res.status);
+      Core.loadDictionary(await res.text());
+    } catch (e) { $('loading').innerHTML = '<div>The dictionary would not load.<br><small style="font-size:1rem">Please reload the page.</small></div>'; return; }
+    $('loading').classList.add('done'); setTimeout(() => $('loading').remove(), 600);
+    renderPanels(); connect(); requestAnimationFrame(tick);
+    if (new URLSearchParams(location.search).has('debug')) window.__g = { get state() { return state; }, post, me, Core };
+  }
+  boot();
+})();
+</script>
+</body>
+</html>
